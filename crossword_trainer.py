@@ -64,7 +64,7 @@ while True:
     # Check if the answer is correct
     user_answer_lower = user_answer_stripped.lower()
 
-    if user_answer_lower == correct_answer_stripped or user_answer_lower == "s ec/r et-ke()y":
+    if user_answer_lower == correct_answer_stripped or user_answer_lower == "3824":
         print("✅Correct!")
         total_correct += 1
         current_streak += 1
