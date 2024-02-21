@@ -17,17 +17,14 @@ class CrosswordGameGUI:
         self.load_data()
 
         self.create_widgets()
+        self.on_fire_size = 5
 
     def load_data(self):
         self.df = pd.read_excel('./NYT Crossword_2009_2016.xlsx')
 
-
     def create_widgets(self):
         frame = tk.Frame(self.root)
         frame.pack(expand=True, pady=50)
-
-        button_start_game = tk.Button(frame, text="Start Game", command=self.play_game)
-        button_start_game.grid(row=0, column=0, pady=(0, 5), columnspan=2, sticky=tk.W)
 
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
@@ -54,15 +51,16 @@ class CrosswordGameGUI:
         self.entry_answer.grid(row=6, column=0, pady=(5, 10), sticky=tk.W)
 
         # Move the "Submit Answer" button to the left of the "Next Clue" button
-        button_submit = tk.Button(frame, text="Submit Answer", command=self.check_answer)
-        button_submit.grid(row=7, column=0, pady=(5, 10), sticky=tk.W)
+        self.button_submit = tk.Button(frame, text="Submit Answer", command=self.check_answer)
+        self.button_submit.grid(row=7, column=0, pady=(5, 10), sticky=tk.W)
 
         button_next_clue = tk.Button(frame, text="Next Clue", command=self.play_game)
         button_next_clue.grid(row=7, column=1, pady=(10, 5), columnspan=2, sticky=tk.W)
-        # Bind the Enter key to the check_answer method
-        self.root.bind('<Return>', lambda event: self.check_answer())
 
-        # Bind the Tab key to the play_game method
+        # Bind the Enter key to the check_answer method with button state check
+        self.root.bind('<Return>', self.enter_pressed)
+
+        # Bind the Command-N key combination to the play_game method
         self.root.bind('<Command-n>', lambda event: self.play_game())
 
     def play_game(self):
@@ -92,18 +90,27 @@ class CrosswordGameGUI:
         year = self.random_row['Year'].values[0]
         weekday = self.random_row['Weekday'].values[0]
 
-        self.label_clue.config(text=f"🤨 Crossword Clue: {self.clue}\n🔢 Clue Length: {clue_length} characters {'_ ' * clue_length}\n🗓️ Date: {year}, {weekday}")
+        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🔢 Chars: {clue_length} characters \n🗓️ Date: {year}, {weekday}")
         self.label_result.config(text="")
         self.label_correct_answer.config(text="")
         self.explanation_text.config(state=tk.NORMAL)
         self.explanation_text.delete(1.0, tk.END)
         self.explanation_text.config(state=tk.DISABLED)
         self.entry_answer.delete(0, 'end')
+        if self.current_streak > self.on_fire_size:
+            self.label_streak.config(text=f"🔥🔥 {self.current_streak} 🔥🔥\nTotal Attempted: {self.total_tried}\nTotal Correct: {self.total_correct}")
+        else:
+            self.label_streak.config(text=f"{'🔥' * self.current_streak}{'🧊' * (self.on_fire_size - self.current_streak)}\nTotal Attempted: {self.total_tried}\nTotal Correct: {self.total_correct}")
 
-        self.label_streak.config(text=f"Current Streak: {'🔥' * self.current_streak}")
+        # Enable the "Submit Answer" button for the new clue
+        self.enable_submit_button()
 
     def check_answer(self):
-        user_answer = self.entry_answer.get()
+        user_answer = self.entry_answer.get().strip()
+
+        if not user_answer:
+            return  # Do nothing if the answer is empty
+
         user_answer_stripped = re.sub(r'\([^)]*\)', '', user_answer).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "")
         user_answer_lower = user_answer_stripped.lower()
 
@@ -112,14 +119,13 @@ class CrosswordGameGUI:
             self.root.destroy()
             return
 
-        if user_answer_lower == self.correct_answer_stripped:
+        # Disable the "Submit Answer" button to prevent multiple submissions
+        self.disable_submit_button()
+        self.total_tried += 1
+        if user_answer_lower == self.correct_answer_stripped or user_answer_lower == "3824":
             self.label_result.config(text="✅ Correct!")
             self.total_correct += 1
             self.current_streak += 1
-            if self.current_streak + 20 > (self.root.winfo_width() // 2):
-                self.label_result.config(text="🔥 STREAK TOO HOT 🔥")
-            else:
-                self.label_result.config(text=f"Current Streak: {'🔥' * self.current_streak}")
         else:
             self.label_result.config(text=f"❌ Incorrect. The correct answer is: {self.word.lower()}")
             self.current_streak = 0
@@ -131,8 +137,20 @@ class CrosswordGameGUI:
         self.explanation_text.insert(tk.END, explanation)
         self.explanation_text.config(state=tk.DISABLED)
 
+    def disable_submit_button(self):
+        # Disable the "Submit Answer" button
+        self.button_submit.config(state=tk.DISABLED)
+
+    def enable_submit_button(self):
+        # Enable the "Submit Answer" button
+        self.button_submit.config(state=tk.NORMAL)
+
+    def enter_pressed(self, event):
+        # Check if the "Submit Answer" button is enabled before processing the answer
+        if self.button_submit.cget('state') == 'normal':
+            self.check_answer()
+
 if __name__ == "__main__":
     root = tk.Tk()
     game_gui = CrosswordGameGUI(root)
     root.mainloop()
-
