@@ -35,13 +35,13 @@ class CrosswordGameGUI:
 
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
-        weekday_dropdown = ttk.Combobox(frame, textvariable=self.weekday_var, values=["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], font=("Arial", 20), state='readonly')
+        weekday_dropdown = ttk.Combobox(frame, textvariable=self.weekday_var, values=["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], font=("Arial", 24), state='readonly')
         weekday_dropdown.grid(row=1, column=0, pady=(0, 5), columnspan=2, sticky=tk.W)
 
         self.label_streak = tk.Label(frame, text="", anchor="w")
         self.label_streak.grid(row=0, column=2, pady=(0, 5), sticky=tk.W)
 
-        self.label_clue = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, font=("Arial", 20))
+        self.label_clue = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, font=("Arial", 24))
         self.label_clue.grid(row=2, column=0, pady=(10, 5), columnspan=2, sticky=tk.W)
 
         self.label_result = tk.Label(frame, text="", anchor="w", font=("Arial", 20))
@@ -51,25 +51,25 @@ class CrosswordGameGUI:
         self.explanation_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, width=100, height=10, font=("Arial", 20))
         self.explanation_text.grid(row=4, column=0, pady=(0, 5), columnspan=3, sticky=tk.W)
 
-        self.label_correct_answer = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, pady=5, font=("Arial", 20))
+        self.label_correct_answer = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, pady=5, font=("Arial", 24))
         self.label_correct_answer.grid(row=5, column=0, pady=(0, 5), columnspan=3, sticky=tk.W)
 
-        self.entry_answer = tk.Entry(frame, width=50, font=("Arial", 20))
-        self.entry_answer.grid(row=6, column=0, pady=(5, 10), sticky=tk.W)
+        self.entry_answer = tk.Entry(frame, width=50, font=("Arial", 24))
+        self.entry_answer.grid(row=6, column=0, columnspan=1, pady=(5, 10), sticky=tk.W)
 
         # Move the "Submit Answer" button to the left of the "Next Clue" button
-        self.button_submit = tk.Button(frame, text="Submit Answer (enter)", command=self.check_answer, font=("Arial", 20))
+        self.button_submit = tk.Button(frame, text="Submit Answer (enter)", command=self.check_answer, font=("Arial", 26))
         self.button_submit.grid(row=7, column=0, pady=(5, 10), sticky=tk.W)
 
-        button_next_clue = tk.Button(frame, text="Next Clue (cmd+n)", command=self.play_game, font=("Arial", 20))
+        button_next_clue = tk.Button(frame, text="Next Clue (cmd+n)", command=self.play_game, font=("Arial", 26))
         button_next_clue.grid(row=7, column=2, pady=(10, 5), columnspan=3, sticky=tk.W)
 
         #hint button
-        self.button_hint = tk.Button(frame, text="Hint (cmd+j)", command=self.show_hint, font=("Arial", 20))
+        self.button_hint = tk.Button(frame, text="Hint (cmd+j)", command=self.show_hint, font=("Arial", 26))
         self.button_hint.grid(row=7, column=1, pady=(10, 5), sticky=tk.W)
 
-        self.hint_text = tk.Text(frame, wrap=tk.WORD, width=50, height=1, font=("Arial", 14))
-        self.hint_text.grid(row=8, column=0, pady=(5, 10), columnspan=2, sticky=tk.W)
+        self.hint_text = tk.Text(frame, wrap=tk.WORD, width=50, height=1, font=("Arial", 24))
+        self.hint_text.grid(row=8, column=0, pady=(5, 10), columnspan=1, sticky=tk.W)
         self.hint_text.insert(tk.END, "Hint box")
         self.hint_text.config(state=tk.DISABLED)
 
