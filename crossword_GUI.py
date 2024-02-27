@@ -4,6 +4,7 @@ import re
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 
+
 class CrosswordGameGUI:
     def __init__(self, root):
         self.root = root
@@ -22,7 +23,7 @@ class CrosswordGameGUI:
         self.hint_length = 1  # Initialize hint length to 1
         self.revealed_indices = set()
         self.used_hint = False
-        
+
         # Automatically start the game by pressing the "Next Clue" button
         self.play_game()
 
@@ -104,7 +105,7 @@ class CrosswordGameGUI:
         # Extract clue information
         self.clue = self.random_row['Clue'].values[0]
         self.word = self.random_row['Word'].values[0]
-        self.correct_answer_stripped = re.sub(r'\([^)]*\)', '', self.word.lower()).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "")
+        self.correct_answer_stripped = re.sub(r'\([^)]*\)', '', self.word.lower()).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "").replace("!", "").replace("?", "").replace(",", "").replace("_", "")
         clue_length = len(self.correct_answer_stripped)
         year = self.random_row['Year'].values[0]
         weekday = self.random_row['Weekday'].values[0]
