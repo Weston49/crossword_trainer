@@ -47,10 +47,27 @@ class CrosswordGameGUI:
         frame.pack(expand=True, pady=50)
         self.frame = frame
 
+        #label for weekday dropdown
+        weekday_label = tk.Label(frame, text="Weekday:", font=("Arial", 24))
+        weekday_label.grid(row=0, column=0, pady=(0, 5), columnspan=1, sticky=tk.W)
+
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
         weekday_dropdown = ttk.Combobox(frame, textvariable=self.weekday_var, values=["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], font=("Arial", 24), state='readonly')
-        weekday_dropdown.grid(row=0, column=0, pady=(0, 5), columnspan=2, sticky=tk.W)
+        weekday_dropdown.grid(row=0, column=2, pady=(0, 5), columnspan=1, sticky=tk.W)
+
+        #Label text for the frequency dropdown
+        frequency_label = tk.Label(frame, text="Frequency:", font=("Arial", 24))
+        frequency_label.grid(row=0, column=3, pady=(0, 5), columnspan=1, sticky=tk.W)
+
+        # Dropdown for filtering by frequency
+        self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
+        #adds a text box that you can only enter numbers into
+        frequency_start_dropdown = ttk.Combobox(frame, textvariable=self.frequency_start_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
+        frequency_start_dropdown.grid(row=0, column=4, pady=(0, 5), columnspan=1, sticky=tk.W)
+        self.frequency_end_var = tk.StringVar(value="96")  # Default value is "96"
+        frequency_end_dropdown = ttk.Combobox(frame, textvariable=self.frequency_end_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
+        frequency_end_dropdown.grid(row=0, column=5, pady=(0, 5), columnspan=1, sticky=tk.W)
 
         self.label_streak = tk.Label(frame, text="", anchor="w")
         self.label_streak.grid(row=0, column=9, pady=(0, 5), sticky=tk.W)
@@ -123,9 +140,20 @@ class CrosswordGameGUI:
                 messagebox.showinfo("No Clues Found", f"No {selected_weekday} clues found. Exiting the game.")
                 self.root.destroy()
                 return
-            self.random_row = filtered_df.sample()
         else:
-            self.random_row = self.df.sample()
+            filtered_df = self.df
+
+        selected_frequency_start = self.frequency_start_var.get()
+        selected_frequency_end = self.frequency_end_var.get()
+        # Filter clues based on the selected frequency range
+        if selected_frequency_start != "1" or selected_frequency_end != "96" and not filtered_df.empty:
+            filtered2_df = filtered_df[(filtered_df['Total'] >= int(selected_frequency_start)) & (filtered_df['Total'] <= int(selected_frequency_end))]
+            if filtered2_df.empty:
+                messagebox.showinfo("No Clues Found", f"No clues found in the selected frequency range.")
+                return
+            self.random_row = filtered2_df.sample()
+        else:
+            self.random_row = filtered_df.sample()
 
         # Extract clue information
         self.clue = self.random_row['Clue'].values[0]
