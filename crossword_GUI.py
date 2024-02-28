@@ -2,6 +2,7 @@ import pandas as pd
 import random
 import re
 import tkinter as tk
+from tkSliderWidget import Slider
 import sys
 import os
 from tkinter import ttk, messagebox, scrolledtext
@@ -47,27 +48,36 @@ class CrosswordGameGUI:
         frame.pack(expand=True, pady=50)
         self.frame = frame
 
-        #label for weekday dropdown
+        # Label for weekday dropdown
         weekday_label = tk.Label(frame, text="Weekday:", font=("Arial", 24))
-        weekday_label.grid(row=0, column=0, pady=(0, 5), columnspan=1, sticky=tk.W)
+        weekday_label.grid(row=0, column=0, pady=(0, 5), columnspan=1, sticky=tk.E)
+
+        # Slider for filtering by date
+        self.slider = Slider(frame, width = 400, height = 60, min_val = 1, max_val = 96, init_lis = [1,96], show_value = True, step_size=1)
+        self.slider.grid(row=0, column=4, pady=(0, 5), columnspan=1, sticky=tk.W)
+        self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
+        self.frequency_end_var = tk.StringVar(value="96")  # Default value is "96"
+
+        #Update these two values when the slider is moved
+        self.slider.setValueChangeCallback(lambda vals: [self.frequency_start_var.set(str(vals[0])), self.frequency_end_var.set(str(vals[1]))])
 
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
-        weekday_dropdown = ttk.Combobox(frame, textvariable=self.weekday_var, values=["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], font=("Arial", 24), state='readonly')
-        weekday_dropdown.grid(row=0, column=2, pady=(0, 5), columnspan=1, sticky=tk.W)
+        weekday_dropdown = ttk.Combobox(frame, textvariable=self.weekday_var, values=["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], font=("Arial", 24), state='readonly', width=5)
+        weekday_dropdown.grid(row=0, column=1, pady=(0, 5), columnspan=1, sticky=tk.E)
 
         #Label text for the frequency dropdown
         frequency_label = tk.Label(frame, text="Frequency:", font=("Arial", 24))
         frequency_label.grid(row=0, column=3, pady=(0, 5), columnspan=1, sticky=tk.W)
 
         # Dropdown for filtering by frequency
-        self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
+        #self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
         #adds a text box that you can only enter numbers into
-        frequency_start_dropdown = ttk.Combobox(frame, textvariable=self.frequency_start_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
-        frequency_start_dropdown.grid(row=0, column=4, pady=(0, 5), columnspan=1, sticky=tk.W)
-        self.frequency_end_var = tk.StringVar(value="96")  # Default value is "96"
-        frequency_end_dropdown = ttk.Combobox(frame, textvariable=self.frequency_end_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
-        frequency_end_dropdown.grid(row=0, column=5, pady=(0, 5), columnspan=1, sticky=tk.W)
+        #frequency_start_dropdown = ttk.Combobox(frame, textvariable=self.frequency_start_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
+        #frequency_start_dropdown.grid(row=0, column=4, pady=(0, 5), columnspan=1, sticky=tk.W)
+        #self.frequency_end_var = tk.StringVar(value="96")  # Default value is "96"
+        #frequency_end_dropdown = ttk.Combobox(frame, textvariable=self.frequency_end_var, values=[str(i) for i in range(1, 97)], font=("Arial", 24), state='readonly', width=2)
+        #frequency_end_dropdown.grid(row=0, column=5, pady=(0, 5), columnspan=1, sticky=tk.W)
 
         self.label_streak = tk.Label(frame, text="", anchor="w")
         self.label_streak.grid(row=0, column=9, pady=(0, 5), sticky=tk.W)
@@ -111,7 +121,7 @@ class CrosswordGameGUI:
         self.entry_boxes = []
 
         entry_frame = tk.Frame(self.frame)
-        entry_frame.grid(row=3, column=2, columnspan=10, padx=10, pady=(10, 15), sticky="nsew")
+        entry_frame.grid(row=3, column=0, columnspan=10, padx=10, pady=(10, 15), sticky="nsew")
 
 
         for i in range(self.clue_length):
@@ -147,7 +157,7 @@ class CrosswordGameGUI:
         selected_frequency_end = self.frequency_end_var.get()
         # Filter clues based on the selected frequency range
         if selected_frequency_start != "1" or selected_frequency_end != "96" and not filtered_df.empty:
-            filtered2_df = filtered_df[(filtered_df['Total'] >= int(selected_frequency_start)) & (filtered_df['Total'] <= int(selected_frequency_end))]
+            filtered2_df = filtered_df[(filtered_df['Total'] >= int(float(selected_frequency_start))) & (filtered_df['Total'] <= int(float(selected_frequency_end)))]
             if filtered2_df.empty:
                 messagebox.showinfo("No Clues Found", f"No clues found in the selected frequency range.")
                 return
@@ -161,8 +171,8 @@ class CrosswordGameGUI:
         self.times_used = self.random_row['Total'].values[0]
         self.correct_answer_stripped = re.sub(r'\([^)]*\)', '', self.word.lower()).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "").replace("!", "").replace("?", "").replace(",", "").replace("_", "")
         clue_length = len(self.correct_answer_stripped)
-        year = self.random_row['Year'].values[0]
-        weekday = self.random_row['Weekday'].values[0]
+        self.year = self.random_row['Year'].values[0]
+        self.weekday = self.random_row['Weekday'].values[0]
         self.clue_length = clue_length
 
         self.create_entry_boxes()
@@ -170,7 +180,7 @@ class CrosswordGameGUI:
         self.entry_boxes[self.current_box_index]["entry"].focus()
         self.set_background_color()  # Set background color for the currently selected box
 
-        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🗓️ Date: {year}, {weekday}\nTimes Used: {self.times_used}")
+        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🗓️ Date: {self.year}, {self.weekday}\nTimes Used: ??")
         self.label_result.config(text="")
         self.explanation_text.config(state=tk.NORMAL)
         self.explanation_text.delete(1.0, tk.END)
@@ -255,6 +265,7 @@ class CrosswordGameGUI:
 
         user_answer_stripped = re.sub(r'\([^)]*\)', '', user_answer).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "")
         user_answer_lower = user_answer_stripped.lower()
+        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🗓️ Date: {self.year}, {self.weekday}\nTimes Used: {self.times_used}")
 
         if user_answer_lower == "exit":
             messagebox.showinfo("Thanks for playing!", f"Total Attempted: {self.total_tried}\nTotal Correct: {self.total_correct}")
@@ -286,6 +297,8 @@ class CrosswordGameGUI:
         # Check if the "Submit Answer" button is enabled before processing the answer
         if self.submit_enabled:
             self.check_answer()
+        else:
+            self.play_game()
 
     def reset_background_color(self):
         for entry_box in self.entry_boxes:
