@@ -71,11 +71,6 @@ class CrosswordGameGUI:
         self.button_hint = tk.Button(frame, text="Hint (cmd+j)", command=self.show_hint, font=("Arial", 26))
         self.button_hint.grid(row=7, column=1, pady=(10, 5), sticky=tk.W)
 
-        self.hint_text = tk.Text(frame, wrap=tk.WORD, width=50, height=1, font=("Arial", 24))
-        self.hint_text.grid(row=8, column=0, pady=(5, 10), columnspan=1, sticky=tk.W)
-        self.hint_text.insert(tk.END, "Hint box")
-        self.hint_text.config(state=tk.DISABLED)
-
         # Bind the Enter key to the check_answer method with button state check
         self.root.bind('<Return>', self.enter_pressed)
         self.root.bind("<Key>", self.handle_key_press)
@@ -109,7 +104,7 @@ class CrosswordGameGUI:
             box.pack(side='top', fill='both', expand=True)
             box.config(state='readonly')  # Set boxes to read-only by default
 
-            self.entry_boxes.append({"frame": box_frame, "entry": box})
+            self.entry_boxes.append({"frame": box_frame, "entry": box, "hint_shown": False, "index": i})
 
     def play_game(self):
         # Check if the DataFrame is empty
@@ -158,11 +153,6 @@ class CrosswordGameGUI:
         # Enable the "Submit Answer" button for the new clue
         self.enable_submit_button()
         self.hint_length = 1
-        # Clear the hint box
-        self.hint_text.config(state=tk.NORMAL)
-        self.hint_text.delete(1.0, tk.END)
-        self.hint_text.insert(tk.END, "Hint box")
-        self.hint_text.config(state=tk.DISABLED)
         # Clear the revealed indices set
         self.revealed_indices = set()
         self.used_hint = False
@@ -170,21 +160,33 @@ class CrosswordGameGUI:
     def handle_key_press(self, event):
         key = event.char.upper()
 
-        if key.isalpha() and self.current_box_index < len(self.entry_boxes):
+        if key.isalpha() and self.current_box_index < len(self.entry_boxes) and not self.entry_boxes[self.current_box_index]["hint_shown"]:
             self.reset_background_color()  # Reset background color for all boxes
             self.entry_boxes[self.current_box_index]["entry"].config(state='normal')  # Make box writable
             self.entry_boxes[self.current_box_index]["entry"].delete(0, tk.END)  # Clear existing text
             self.entry_boxes[self.current_box_index]["entry"].insert(0, key)
             self.current_box_index += 1
-
             if self.current_box_index < len(self.entry_boxes):
                 self.entry_boxes[self.current_box_index]["entry"].focus()
-                self.set_background_color()  # Set background color for the currently selected box
             else:
                 self.current_box_index -= 1  # Keep the current box index within the valid range
                 self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
+                self.reset_background_color()  # Reset background color for all boxes
+                self.set_background_color()  # Set background color for the currently selected box
+        elif self.entry_boxes[self.current_box_index]["hint_shown"] and self.current_box_index < len(self.entry_boxes) - 1:
+            self.reset_background_color()  # Reset background color for all boxes
+            self.current_box_index += 1
+            self.entry_boxes[self.current_box_index]["entry"].focus()
+            self.set_background_color()  # Set background color for the currently selected box
 
-            self.entry_boxes[self.current_box_index - 1]["entry"].config(state='readonly')  # Change back to read-only
+        if self.current_box_index >= len(self.entry_boxes):
+            self.current_box_index = len(self.entry_boxes) - 1  # Keep the current box index within the valid range
+            self.reset_background_color()  # Reset background color for all boxes
+            self.set_background_color()  # Set background color for the currently selected box
+
+
+        self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
+        self.entry_boxes[self.current_box_index - 1]["entry"].config(state='readonly')  # Change back to read-only
 
     def shift_left(self, event):
         if self.current_box_index > 0:
@@ -202,7 +204,7 @@ class CrosswordGameGUI:
 
 
     def handle_backspace(self, event):
-        if self.current_box_index >= 0:
+        if self.current_box_index >= 0 and self.entry_boxes[self.current_box_index]["hint_shown"] == False:
             self.reset_background_color()  # Reset background color for all boxes
             self.entry_boxes[self.current_box_index]["entry"].config(state='normal')  # Make box writable
             self.entry_boxes[self.current_box_index]["entry"].delete(0, tk.END)
@@ -210,10 +212,12 @@ class CrosswordGameGUI:
         if self.current_box_index > 0:
             self.current_box_index -= 1
             self.entry_boxes[self.current_box_index]["entry"].focus()
+            self.reset_background_color()  # Reset background color for all boxes
             self.set_background_color()  # Set background color for the currently selected box
         if self.current_box_index < 0:
             self.current_box_index = 0
             self.entry_boxes[self.current_box_index]["entry"].focus()
+            self.reset_background_color()  # Reset background color for all boxes
             self.set_background_color()  # Set background color for the currently selected box
 
     def check_answer(self):
@@ -263,7 +267,10 @@ class CrosswordGameGUI:
 
     def reset_background_color(self):
         for entry_box in self.entry_boxes:
-            entry_box["frame"].config(highlightbackground='black')
+            if entry_box["hint_shown"] == False:
+                entry_box["frame"].config(highlightbackground='black')
+            else:
+                entry_box["frame"].config(highlightbackground='yellow')
 
     def set_background_color(self):
         self.entry_boxes[self.current_box_index]["frame"].config(highlightbackground='white')
@@ -273,23 +280,27 @@ class CrosswordGameGUI:
         if hasattr(self, 'word'):
             # Increment the hint length and update the displayed hint
             self.hint_length += 1
-            hint = self.generate_hint(self.word, self.hint_length)
-            self.hint_text.config(state=tk.NORMAL)
-            self.hint_text.delete(1.0, tk.END)
-            self.hint_text.insert(tk.END, hint)
-            self.hint_text.config(state=tk.DISABLED)
+            box_to_fill = self.randomly_select_box()
+            if box_to_fill != None:
+                box_to_fill["entry"].config(state='normal')
+                box_to_fill["entry"].delete(0, tk.END)
+                # Fill the box with the correct letter from the stripped down word upper case
+                box_to_fill["entry"].insert(0, self.correct_answer_stripped[box_to_fill["index"]].upper())
+                box_to_fill["entry"].config(state='readonly')
+                box_to_fill["hint_shown"] = True
+                #change the background color of the hint box to red
+                box_to_fill["frame"].config(highlightbackground='yellow')
 
-    def generate_hint(self, word, hint_length):
-        # Replace all previously revealed letters and one extra random letter with "_"
-        if hint_length <= len(word):
-            unrevealed_indices = set(range(len(word))) - self.revealed_indices
-            extra_revealed_indices = random.sample(list(unrevealed_indices), hint_length - 1 - len(self.revealed_indices))
-            self.revealed_indices.update(extra_revealed_indices)
-            hint = ''.join(char if i in self.revealed_indices else "_ " for i, char in enumerate(word))
+    def randomly_select_box(self):
+        # Filter entry boxes with "hint_shown" field as False
+        eligible_boxes = [entry_box for entry_box in self.entry_boxes if not entry_box["hint_shown"]]
+
+        if eligible_boxes:
+            # Randomly select an entry box
+            selected_box = random.choice(eligible_boxes)
+            return selected_box
         else:
-            hint = word  # Show the complete word if the hint length exceeds the word length
-
-        return hint
+            return None
 
 
 
