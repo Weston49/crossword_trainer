@@ -130,6 +130,7 @@ class CrosswordGameGUI:
         # Extract clue information
         self.clue = self.random_row['Clue'].values[0]
         self.word = self.random_row['Word'].values[0]
+        self.times_used = self.random_row['Total'].values[0]
         self.correct_answer_stripped = re.sub(r'\([^)]*\)', '', self.word.lower()).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "").replace("!", "").replace("?", "").replace(",", "").replace("_", "")
         clue_length = len(self.correct_answer_stripped)
         year = self.random_row['Year'].values[0]
@@ -141,7 +142,7 @@ class CrosswordGameGUI:
         self.entry_boxes[self.current_box_index]["entry"].focus()
         self.set_background_color()  # Set background color for the currently selected box
 
-        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🗓️ Date: {year}, {weekday}")
+        self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🗓️ Date: {year}, {weekday}\nTimes Used: {self.times_used}")
         self.label_result.config(text="")
         self.explanation_text.config(state=tk.NORMAL)
         self.explanation_text.delete(1.0, tk.END)
