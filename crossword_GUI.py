@@ -24,6 +24,10 @@ class CrosswordGameGUI:
         self.revealed_indices = set()
         self.used_hint = False
 
+        self.clue_length = 3
+        self.current_box_index = 0
+        self.entry_boxes = []
+
         # Automatically start the game by pressing the "Next Clue" button
         self.play_game()
 
@@ -33,6 +37,7 @@ class CrosswordGameGUI:
     def create_widgets(self):
         frame = tk.Frame(self.root)
         frame.pack(expand=True, pady=50)
+        self.frame = frame
 
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
@@ -55,9 +60,6 @@ class CrosswordGameGUI:
         self.label_correct_answer = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, pady=5, font=("Arial", 24))
         self.label_correct_answer.grid(row=5, column=0, pady=(0, 5), columnspan=3, sticky=tk.W)
 
-        self.entry_answer = tk.Entry(frame, width=50, font=("Arial", 24))
-        self.entry_answer.grid(row=6, column=0, columnspan=1, pady=(5, 10), sticky=tk.W)
-
         # Move the "Submit Answer" button to the left of the "Next Clue" button
         self.button_submit = tk.Button(frame, text="Submit Answer (enter)", command=self.check_answer, font=("Arial", 26))
         self.button_submit.grid(row=7, column=0, pady=(5, 10), sticky=tk.W)
@@ -76,12 +78,38 @@ class CrosswordGameGUI:
 
         # Bind the Enter key to the check_answer method with button state check
         self.root.bind('<Return>', self.enter_pressed)
+        self.root.bind("<Key>", self.handle_key_press)
+        self.root.bind("<BackSpace>", self.handle_backspace)
+        self.root.bind("<Left>", self.shift_left)
+        self.root.bind("<Right>", self.shift_right)
 
         # Bind the Command-N key combination to the play_game method
         self.root.bind('<Command-n>', lambda event: self.play_game())
 
         self.root.bind('<Command-j>', lambda event: self.show_hint())
 
+
+    def create_entry_boxes(self):
+        # Remove existing entry boxes
+        for entry_box in self.entry_boxes:
+            entry_box["frame"].destroy()
+
+        # Clear the list of entry boxes
+        self.entry_boxes = []
+
+        entry_frame = tk.Frame(self.frame)
+        entry_frame.grid(row=6, column=0, padx=10, pady=10, sticky="nsew")
+
+
+        for i in range(self.clue_length):
+            box_frame = tk.Frame(entry_frame, bg='black', borderwidth=0, relief='solid', highlightbackground='black', highlightthickness=4)
+            box_frame.grid(row=0, column=i, padx=1, pady=2)
+
+            box = tk.Entry(box_frame, width=2, justify='center', font=('Arial', 24, 'bold'))
+            box.pack(side='top', fill='both', expand=True)
+            box.config(state='readonly')  # Set boxes to read-only by default
+
+            self.entry_boxes.append({"frame": box_frame, "entry": box})
 
     def play_game(self):
         # Check if the DataFrame is empty
@@ -109,6 +137,12 @@ class CrosswordGameGUI:
         clue_length = len(self.correct_answer_stripped)
         year = self.random_row['Year'].values[0]
         weekday = self.random_row['Weekday'].values[0]
+        self.clue_length = clue_length
+
+        self.create_entry_boxes()
+        self.current_box_index = 0
+        self.entry_boxes[self.current_box_index]["entry"].focus()
+        self.set_background_color()  # Set background color for the currently selected box
 
         self.label_clue.config(text=f"🤨 Clue: {self.clue}\n🔢 Chars: {clue_length} characters \n🗓️ Date: {year}, {weekday}")
         self.label_result.config(text="")
@@ -116,7 +150,6 @@ class CrosswordGameGUI:
         self.explanation_text.config(state=tk.NORMAL)
         self.explanation_text.delete(1.0, tk.END)
         self.explanation_text.config(state=tk.DISABLED)
-        self.entry_answer.delete(0, 'end')
         if self.current_streak > self.on_fire_size:
             self.label_streak.config(text=f"🔥🔥 {self.current_streak} 🔥🔥\nTotal Attempted: {self.total_tried}\nTotal Correct: {self.total_correct}", font=("Arial", 20))
         else:
@@ -134,8 +167,57 @@ class CrosswordGameGUI:
         self.revealed_indices = set()
         self.used_hint = False
 
+    def handle_key_press(self, event):
+        key = event.char.upper()
+
+        if key.isalpha() and self.current_box_index < len(self.entry_boxes):
+            self.reset_background_color()  # Reset background color for all boxes
+            self.entry_boxes[self.current_box_index]["entry"].config(state='normal')  # Make box writable
+            self.entry_boxes[self.current_box_index]["entry"].delete(0, tk.END)  # Clear existing text
+            self.entry_boxes[self.current_box_index]["entry"].insert(0, key)
+            self.current_box_index += 1
+
+            if self.current_box_index < len(self.entry_boxes):
+                self.entry_boxes[self.current_box_index]["entry"].focus()
+                self.set_background_color()  # Set background color for the currently selected box
+            else:
+                self.current_box_index -= 1  # Keep the current box index within the valid range
+                self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
+
+            self.entry_boxes[self.current_box_index - 1]["entry"].config(state='readonly')  # Change back to read-only
+
+    def shift_left(self, event):
+        if self.current_box_index > 0:
+            self.reset_background_color()  # Reset background color for all boxes
+            self.current_box_index -= 1
+            self.set_background_color()  # Set background color for the currently selected box
+            self.entry_boxes[self.current_box_index]["entry"].focus()
+
+    def shift_right(self, event):
+        if self.current_box_index < len(self.entry_boxes) - 1:
+            self.reset_background_color()  # Reset background color for all boxes
+            self.current_box_index += 1
+            self.set_background_color()  # Set background color for the currently selected box
+            self.entry_boxes[self.current_box_index]["entry"].focus()
+
+
+    def handle_backspace(self, event):
+        if self.current_box_index >= 0:
+            self.reset_background_color()  # Reset background color for all boxes
+            self.entry_boxes[self.current_box_index]["entry"].config(state='normal')  # Make box writable
+            self.entry_boxes[self.current_box_index]["entry"].delete(0, tk.END)
+            self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
+        if self.current_box_index > 0:
+            self.current_box_index -= 1
+            self.entry_boxes[self.current_box_index]["entry"].focus()
+            self.set_background_color()  # Set background color for the currently selected box
+        if self.current_box_index < 0:
+            self.current_box_index = 0
+            self.entry_boxes[self.current_box_index]["entry"].focus()
+            self.set_background_color()  # Set background color for the currently selected box
+
     def check_answer(self):
-        user_answer = self.entry_answer.get().strip()
+        user_answer = ''.join(entry["entry"].get() for entry in self.entry_boxes)
 
         user_answer_stripped = re.sub(r'\([^)]*\)', '', user_answer).replace("-", "").replace(" ", "").replace("'", "").replace("/", "").replace(".", "")
         user_answer_lower = user_answer_stripped.lower()
@@ -178,6 +260,13 @@ class CrosswordGameGUI:
         # Check if the "Submit Answer" button is enabled before processing the answer
         if self.button_submit.cget('state') == 'normal':
             self.check_answer()
+
+    def reset_background_color(self):
+        for entry_box in self.entry_boxes:
+            entry_box["frame"].config(highlightbackground='black')
+
+    def set_background_color(self):
+        self.entry_boxes[self.current_box_index]["frame"].config(highlightbackground='white')
 
     def show_hint(self):
         self.used_hint = True
