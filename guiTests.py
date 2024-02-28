@@ -7,7 +7,7 @@ class CrosswordSimulator:
 
         self.current_box_index = 0
         self.entry_boxes = []
-        self.clue = "PYTHON"  # Change the clue word as needed
+        self.clue = "CROSSWORD"  # Change the clue word as needed
 
         self.create_entry_boxes()
         self.create_enter_button()
@@ -51,18 +51,22 @@ class CrosswordSimulator:
             if self.current_box_index < len(self.entry_boxes):
                 self.entry_boxes[self.current_box_index]["entry"].focus()
                 self.set_background_color()  # Set background color for the currently selected box
+            else:
+                self.current_box_index -= 1  # Keep the current box index within the valid range
+                self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
 
             self.entry_boxes[self.current_box_index - 1]["entry"].config(state='readonly')  # Change back to read-only
 
     def handle_backspace(self, event):
-        if self.current_box_index > 0:
-            self.current_box_index -= 1
+        if self.current_box_index >= 0:
             self.reset_background_color()  # Reset background color for all boxes
             self.entry_boxes[self.current_box_index]["entry"].config(state='normal')  # Make box writable
             self.entry_boxes[self.current_box_index]["entry"].delete(0, tk.END)
+            self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
+        if self.current_box_index > 0:
+            self.current_box_index -= 1
             self.entry_boxes[self.current_box_index]["entry"].focus()
             self.set_background_color()  # Set background color for the currently selected box
-            self.entry_boxes[self.current_box_index]["entry"].config(state='readonly')  # Change back to read-only
 
     def handle_delete(self, event):
         # Handle the Delete key separately
