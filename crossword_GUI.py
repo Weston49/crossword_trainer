@@ -38,9 +38,9 @@ class CrosswordGameGUI:
 
     def load_data(self):
         if getattr(sys, 'frozen', False):
-            spreadsheet = os.path.join(sys._MEIPASS, "NYTCrossword_2009_2016.xlsx")
+            spreadsheet = os.path.join(sys._MEIPASS, "CrosswordData.xlsx")
         else:
-            spreadsheet = "./NYTCrossword_2009_2016.xlsx"
+            spreadsheet = "./CrosswordData.xlsx"
         self.df = pd.read_excel(spreadsheet)
 
     def create_widgets(self):
@@ -52,14 +52,23 @@ class CrosswordGameGUI:
         weekday_label = tk.Label(frame, text="Weekday:", font=("Arial", 24))
         weekday_label.grid(row=0, column=0, pady=(0, 5), columnspan=1, sticky=tk.E)
 
-        # Slider for filtering by date
-        self.slider = Slider(frame, width = 400, height = 60, min_val = 1, max_val = 96, init_lis = [1,96], show_value = True, step_size=1)
-        self.slider.grid(row=0, column=4, pady=(0, 5), columnspan=1, sticky=tk.W)
+        # Slider for filtering by how common the clue is
+        self.slider = Slider(frame, width = 300, height = 60, min_val = 1, max_val = 96, init_lis = [1,96], show_value = True, step_size=1)
+        self.slider.grid(row=0, column=7, pady=(0, 5), columnspan=1, sticky=tk.W)
         self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
         self.frequency_end_var = tk.StringVar(value="96")  # Default value is "96"
 
         #Update these two values when the slider is moved
         self.slider.setValueChangeCallback(lambda vals: [self.frequency_start_var.set(str(vals[0])), self.frequency_end_var.set(str(vals[1]))])
+
+        #slider for filtering by how long the clue word is
+        self.length_slider = Slider(frame, width = 200, height = 60, min_val = 3, max_val = 21, init_lis = [3,21], show_value = True, step_size=1)
+        self.length_slider.grid(row=0, column=9, pady=(0, 5), columnspan=1, sticky=tk.W)
+        self.length_start_var = tk.StringVar(value="3")  # Default value is "3"
+        self.length_end_var = tk.StringVar(value="21")  # Default value is "21"
+
+        #update these two values when the slider is moved
+        self.length_slider.setValueChangeCallback(lambda vals: [self.length_start_var.set(str(vals[0])), self.length_end_var.set(str(vals[1]))])
 
         # Dropdown for filtering by weekday
         self.weekday_var = tk.StringVar(value="All")  # Default value is "All"
@@ -68,7 +77,11 @@ class CrosswordGameGUI:
 
         #Label text for the frequency dropdown
         frequency_label = tk.Label(frame, text="Frequency:", font=("Arial", 24))
-        frequency_label.grid(row=0, column=3, pady=(0, 5), columnspan=1, sticky=tk.W)
+        frequency_label.grid(row=0, column=6, pady=(0, 5), columnspan=1, sticky=tk.W)
+
+        #Label text for the length slider
+        length_label = tk.Label(frame, text="Length:", font=("Arial", 24))
+        length_label.grid(row=0, column=8, pady=(0, 5), columnspan=1, sticky=tk.W)
 
         # Dropdown for filtering by frequency
         #self.frequency_start_var = tk.StringVar(value="1")  # Default value is "1"
@@ -80,7 +93,7 @@ class CrosswordGameGUI:
         #frequency_end_dropdown.grid(row=0, column=5, pady=(0, 5), columnspan=1, sticky=tk.W)
 
         self.label_streak = tk.Label(frame, text="", anchor="w")
-        self.label_streak.grid(row=0, column=9, pady=(0, 5), sticky=tk.W)
+        self.label_streak.grid(row=1, column=9, pady=(0, 5), sticky=tk.W)
 
         self.label_clue = tk.Label(frame, text="", wraplength=1100, anchor="w", justify=tk.LEFT, font=("Arial", 24))
         self.label_clue.grid(row=1, column=0, pady=(10, 5), columnspan=8, sticky=tk.W)
@@ -147,7 +160,7 @@ class CrosswordGameGUI:
         if selected_weekday != "All":
             filtered_df = self.df[self.df['Weekday'] == selected_weekday]
             if filtered_df.empty:
-                messagebox.showinfo("No Clues Found", f"No {selected_weekday} clues found. Exiting the game.")
+                messagebox.showinfo("No Clues Found", f"No {selected_weekday} clues found.")
                 self.root.destroy()
                 return
         else:
@@ -161,9 +174,23 @@ class CrosswordGameGUI:
             if filtered2_df.empty:
                 messagebox.showinfo("No Clues Found", f"No clues found in the selected frequency range.")
                 return
-            self.random_row = filtered2_df.sample()
+            filtered_df = filtered2_df
         else:
-            self.random_row = filtered_df.sample()
+            filtered_df = filtered_df
+
+        selected_length_start = self.length_start_var.get()
+        selected_length_end = self.length_end_var.get()
+        # Filter clues based on the selected length range
+        if selected_length_start != "3" or selected_length_end != "21" and not filtered_df.empty:
+            filtered3_df = filtered_df[(filtered_df['Length'] >= int(float(selected_length_start))) & (filtered_df['Length'] <= int(float(selected_length_end)))]
+            if filtered3_df.empty:
+                messagebox.showinfo("No Clues Found", f"No clues found in the selected length range.")
+                return
+            filtered_df = filtered3_df
+
+        # Randomly select a row from the filtered DataFrame
+        self.random_row = filtered_df.sample()
+
 
         # Extract clue information
         self.clue = self.random_row['Clue'].values[0]
