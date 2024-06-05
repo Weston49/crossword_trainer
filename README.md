@@ -6,4 +6,4 @@ This tool allows you to practice crossword clues pulling from a dataset of all N
 
 ![screenshot from the GUI app](/imgs/ss1.png)
 
-The top left is a streak, the 🧊 will change to 🔥 as your streak goes up. Red outlines boxes are letters that you have revealed and cannot be changed after being revealed. After revealing any amount of letters your streak ends and that clue is not counted as correct.
+The top right is a streak, the 🧊 will change to 🔥 as your streak goes up. Red outlines boxes are letters that you have revealed and cannot be changed after being revealed. After revealing any amount of letters your streak ends and that clue is not counted as correct.
